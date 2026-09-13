@@ -273,6 +273,42 @@ ffprobe 对 WAV 的 RIFF INFO 块解码不可靠，返回的 CJK 标题常是 `U
 ### 12. lrclib 网络不稳定
 同一请求在不同时刻返回 HTTP 200 或连接失败。加了 `--retry 3 --retry-connrefused`，且失败时不标记为「已尝试」，下次播放可重试。
 
+### 13. 设置页整个不显示：一个坏 import 拖垮全部
+**症状**：桌面组件卡片里只有 DMS 自带的标准开关（叠加层、鼠标穿透…），**所有自定义设置项都不见了，且没有任何报错日志**。
+
+**原因**：自定义设置行组件里写了相对路径 import：
+
+```qml
+import "../../Common/QmlUtils.js" as QmlUtils   // ← 只对 DMS 内部文件成立
+```
+
+DMS 自带的设置行（`ToggleSetting.qml` 等）住在 `Modules/Plugins/` 里，所以 `../../Common/` 能正确解析到 `Common/`。但插件装在 `/etc/xdg/quickshell/dms-plugins/LyricsBar/`，同样的相对路径会去找 `/etc/xdg/Common/QmlUtils.js`——不存在。
+
+导入失败会让**这个组件**加载失败，而它又是 `PluginSettings` 的 `content` 列表成员，于是**整个设置页静默地什么都渲染不出来**。QML 引擎对此不报错，只在极少数情况下才输出日志——所以完全看不出问题在哪。
+
+**修法**：插件里不要用相对路径 import，改为自己实现等价逻辑（`QmlUtils.findSettings` 本质就是沿 parent 向上找带 `loadValue`/`saveValue` 的对象）：
+
+```qml
+function _findSettings(item) {
+    while (item) {
+        if (item.saveValue !== undefined && item.loadValue !== undefined)
+            return item;
+        item = item.parent;
+    }
+    return null;
+}
+```
+
+### 14. Quickshell 有 QML 编译缓存，改代码后可能不生效
+`~/.cache/quickshell/qmlcache/` 存放编译后的 `.qmlc`。修改 QML 后若行为没变，先清缓存再重启：
+
+```bash
+rm -rf ~/.cache/quickshell/qmlcache
+dms restart
+```
+
+调试时这一点极具误导性——磁盘上的代码明明改了，运行行为却还是旧的，会让人误以为是逻辑错误。
+
 ## 兼容的播放器
 
 理论上支持**所有正确实现 MPRIS2** 的播放器。开发时使用 **Strawberry**（草莓音乐）验证。
@@ -301,7 +337,7 @@ rm -rf ~/.cache/Lyrics
 **本项目完全由 AI 编写。**
 
 - **代码**：`LyricsBar.qml`、`LyricsBarDaemon.qml`、`LyricsBarSettings.qml`、`DependencyToggleSetting.qml`、`to-simplified.py`、`import-lyrics.py`、`install.sh`
-- **调试**：全部问题定位（含上述 12 个坑）由 AI 完成
+- **调试**：全部问题定位（含上述 14 个坑）由 AI 完成
 - **文档**：本 README 由 AI 撰写
 
 人类提供的是**需求、方向与验收**：

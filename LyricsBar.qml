@@ -499,8 +499,6 @@ DesktopPluginComponent {
         root.lyricsLoaded = true;
         root.lyricStatus = "";
 
-        console.info("[LyricsBar] cacheResults=" + root.onlineCacheResults
-            + " convert=" + root.convertToSimplified + " convScript=" + root.converterScript);
         if (root.onlineCacheResults)
             root._writeCache(onlineFetcher.fallbackTitle, onlineFetcher.fallbackArtist,
                              finalLines, entry.syncedLyrics);
@@ -672,14 +670,12 @@ DesktopPluginComponent {
 
         onExited: exitCode => {
             if (exitCode !== 0)
-                console.warn("[LyricsBar] 在线请求退出码:", exitCode, "url=" + queryUrl
-                    + " converter=" + root.converterScript);
+                console.warn("[LyricsBar] 在线请求失败，退出码:", exitCode);
         }
 
         stdout: StdioCollector {
             onStreamFinished: {
                 const raw = (text || "").trim();
-                console.info("[LyricsBar] 在线响应 " + raw.length + " 字节: " + raw.slice(0, 120));
                 let ok = false;
                 try {
                     const parsed = JSON.parse(raw);

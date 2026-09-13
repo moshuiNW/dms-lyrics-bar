@@ -3,7 +3,6 @@ import Quickshell.Io
 import qs.Common
 import qs.Widgets
 import qs.Modules.Plugins
-import "../../Common/QmlUtils.js" as QmlUtils
 
 /*
  * A ToggleSetting whose availability depends on an external binary.
@@ -48,8 +47,25 @@ Row {
         }
     }
 
+    // Walk up to the enclosing PluginSettings, which owns loadValue/saveValue.
+    //
+    // DMS's own setting rows import QmlUtils.js through a relative path
+    // ("../../Common/QmlUtils.js"), which only resolves because those files
+    // live inside the DMS tree. A plugin in /etc/xdg/... cannot use that path,
+    // and importing a missing file fails the whole component -- taking the
+    // entire settings page down with it. This helper is equivalent to
+    // QmlUtils.findSettings and has no external dependency.
+    function _findSettings(item) {
+        while (item) {
+            if (item.saveValue !== undefined && item.loadValue !== undefined)
+                return item;
+            item = item.parent;
+        }
+        return null;
+    }
+
     function loadValue() {
-        const settings = QmlUtils.findSettings(root.parent);
+        const settings = _findSettings(root.parent);
         if (settings && settings.pluginService) {
             const loadedValue = settings.loadValue(settingKey, defaultValue);
             value = loadedValue && dependencyAvailable;
@@ -69,7 +85,7 @@ Row {
     onValueChanged: {
         if (!isInitialized)
             return;
-        const settings = QmlUtils.findSettings(root.parent);
+        const settings = _findSettings(root.parent);
         if (settings)
             settings.saveValue(settingKey, value);
     }
