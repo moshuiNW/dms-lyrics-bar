@@ -1,0 +1,25 @@
+{
+  "id": "lyricsBar",
+  "name": "Lyrics Bar (悬浮歌词)",
+  "description": "A standalone floating desktop lyrics bar reading embedded LRC via MPRIS, auto-shown while the player runs. 独立悬浮歌词条：读取内嵌 LRC，MPRIS 同步，随播放器自动开关",
+  "version": "1.1.0",
+  "author": "local",
+  "icon": "lyrics",
+  "type": "composite",
+  "capabilities": [
+    "desktop-widget",
+    "daemon"
+  ],
+  "components": {
+    "desktop": "./LyricsBar.qml",
+    "daemon": "./LyricsBarDaemon.qml"
+  },
+  "settings": "./LyricsBarSettings.qml",
+  "requires_dms": ">=1.4.0",
+  "dependencies": ["opencc"],
+  "permissions": [
+    "settings_read",
+    "settings_write",
+    "process"
+  ]
+}
